@@ -1,0 +1,292 @@
+root = true
+
+# Как что будет выглядеть можно посмотреть тут: https://kent-boogaart.com/blog/editorconfig-reference-for-c-developers
+# и тут: https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/overview
+# и у Гугла
+
+[*.proto]
+indent_style = tab
+indent_size = tab
+tab_width = 4
+
+# Стандартные отступы - 4 пробела, никаких табов
+[*.{asax,ascx,aspx,axaml,c,c++,cc,cginc,compute,cp,cpp,cs,cshtml,css,cu,cuh,cxx,h,hh,hlsl,hlsli,hlslinc,hpp,htm,html,hxx,inc,inl,ino,ipp,js,jsx,master,mpp,mq4,mq5,mqh,paml,py,razor,skin,tpp,ts,tsx,usf,ush,vb,xaml,xamlx,xoml}]
+indent_style = space
+indent_size = 4
+tab_width = 4
+
+# Для xml, json и т.п. удобнее когда отступы более компактны - 2 пробела
+[*.{appxmanifest,axml,build,config,csproj,dbml,discomap,dtd,json,jsproj,lsproj,njsproj,nuspec,proj,props,resjson,resw,resx,StyleCop,targets,tasks,vbproj,xml,xsd}]
+indent_style = space
+indent_size = 2
+tab_width = 2
+
+[*.{js,py}]
+charset = utf-8
+
+[*.cs]
+file_header_template = unset # Код мы не продаём, стандартные заголовки файлов нам без надобности
+csharp_max_line_length = 120 # 120 считается нормой при которой с кодом ещё можно работать без скороллинга даже на небольших мониторах если развернуть код на весь экран
+
+[*]
+end_of_line = crlf# Unix совместимость нам без надобности, с кодом работаем под Windows
+insert_final_newline = false # Unix совместимость нам без надобности, с кодом работаем под Windows
+trim_trailing_whitespace = true # Мусор в конце строк с кодом не нужен
+csharp_using_directive_placement = outside_namespace:error # Предпочитаем юзинги за пределами неймспейсов
+csharp_prefer_simple_using_statement = true:warning # Предпочитаем декларативные юзинги, но не настаиваем
+csharp_prefer_braces = true:error # Скобки нужны всегда
+csharp_style_namespace_declarations = file_scoped:warning # в .NET6 переходим на file-scoped
+csharp_style_prefer_method_group_conversion = true:suggestion # Предпочитать конвертацию в вызов method group, так запись короче
+csharp_indent_labels = one_less_than_current# Метки размещать внутри блоков с одним внешним смещением
+csharp_style_throw_expression = true:warning # Предпочитать выбрасывание исключений как часть выражения
+spaces_around_operators = true:warning
+spaces_around_brackets = inside:warning
+
+# Expression-bodied members
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion # Предпочитать лямбды для методов если они однострочные
+csharp_style_expression_bodied_constructors = false:error # Обойдёмся без лямбд-конструкторов
+csharp_style_expression_bodied_operators = false:error # Обойдёмся без лямбд-операторов
+csharp_style_expression_bodied_properties = when_on_single_line:warning # Предпочитать лямбды для свойств если они однострочные
+csharp_style_expression_bodied_indexers = when_on_single_line:warning # Предпочитать лямбды для индексных свойств если они однострочные
+csharp_style_expression_bodied_accessors = true:warning # Предпочитать лямбды для аксессоров в свойствах
+csharp_style_expression_bodied_lambdas = true:warning # Предпочитать лямбды для выражений
+csharp_style_expression_bodied_local_functions = false:none # Не использовать лямбды для локальных функций, но не ругаться на это
+csharp_style_prefer_null_check_over_type_check = true:suggestion
+
+[*.{cs,vb}]
+# Microsoft .NET properties
+csharp_new_line_before_open_brace = all # Всегда нужна пустая строка перед отркывающей скобкой
+csharp_new_line_before_members_in_object_initializers = false # Не располагать инициализаторы объектов в одну строку
+
+# Порядок сортировки модифиаторов в файле
+csharp_preferred_modifier_order = public, private, protected, internal, new, abstract, virtual, sealed, override, static, readonly, extern, unsafe, volatile, async:suggestion
+
+# В целом предпочитать var явному объявлению типов
+csharp_style_var_elsewhere = true:suggestion
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+
+# Diagnostics
+dotnet_analyzer_diagnostic.category-Major Bug.severity = error
+
+csharp_style_unused_value_expression_statement_preference = discard_variable:error # Предпочитать использование дискард символов если результат выражения нам не нужен
+csharp_style_prefer_range_operator = true:suggestion # Предпочитать использование range выражений при работе со строками и массивами
+csharp_style_implicit_object_creation_when_type_is_apparent = true:suggestion # Предпочитать неявное объявление типа при инициализации, если тип очевиден
+
+csharp_indent_case_contents = true # Смещать брейки в кейсах
+csharp_indent_switch_labels = false # Смещать кейсы в свичах
+
+csharp_preserve_single_line_statements = false # Не пытаться сохранять однострочные выражения при форматировании
+
+csharp_space_after_cast = false # Не нужен пробел после приведения типа
+csharp_space_after_keywords_in_control_flow_statements = true # Нужен пробел после ключевых слов
+
+# Рулы для нейминга
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.public_symbols.applicable_kinds = property,method,field,event,delegate
+
+dotnet_naming_symbols.public_symbols.applicable_accessibilities = public
+dotnet_naming_symbols.public_symbols.required_modifiers = readonly
+
+dotnet_naming_symbols.private_static_fields.applicable_kinds = field
+dotnet_naming_symbols.private_static_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_fields.required_modifiers = static
+
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+
+dotnet_naming_style.underscore_prefix.capitalization = camel_case
+dotnet_naming_style.underscore_prefix.required_prefix = _
+
+dotnet_naming_style.private_static_prefix.capitalization = camel_case
+dotnet_naming_style.private_static_prefix.required_prefix = s_
+
+dotnet_naming_style.constant_style.capitalization = first_word_upper
+
+dotnet_naming_style.static_style.capitalization = first_word_upper
+
+dotnet_naming_symbols.constants.applicable_kinds = field, local
+dotnet_naming_symbols.constants.required_modifiers = const
+
+dotnet_naming_symbols.statics.applicable_kinds = field, local
+dotnet_naming_symbols.statics.required_modifiers = static
+
+dotnet_naming_rule.private_members_with_underscore.symbols = private_fields
+dotnet_naming_rule.private_members_with_underscore.style = underscore_prefix
+dotnet_naming_rule.private_members_with_underscore.severity = error
+dotnet_naming_rule.public_members_must_be_capitalized.symbols = public_symbols
+dotnet_naming_rule.public_members_must_be_capitalized.style = first_word_upper_case_style
+dotnet_naming_rule.public_members_must_be_capitalized.severity = error
+dotnet_naming_rule.constants_should_be_upper_case.severity = error
+dotnet_naming_rule.constants_should_be_upper_case.symbols = constants
+dotnet_naming_rule.constants_should_be_upper_case.style = constant_style
+
+dotnet_naming_rule.private_statics_should_be_s_prefix.severity = error
+dotnet_naming_rule.private_statics_should_be_s_prefix.symbols = private_static_fields
+dotnet_naming_rule.private_statics_should_be_s_prefix.style = private_static_prefix
+
+dotnet_naming_rule.statics_should_be_upper_case.severity = error
+dotnet_naming_rule.statics_should_be_upper_case.symbols = statics
+dotnet_naming_rule.statics_should_be_upper_case.style = constant_style
+
+# Сортировка и группировка импортов
+dotnet_sort_system_directives_first = true # Решили системные импорты делать первыми
+dotnet_separate_import_directive_groups = false # Не нужно импорты разбивать на группы
+
+# Стили
+dotnet_style_parentheses_in_arithmetic_binary_operators = never_if_unnecessary:suggestion # Не надо ставить скобки в арифметических выражениях если они не влияют на порядок вычисления
+dotnet_style_parentheses_in_other_binary_operators = never_if_unnecessary:suggestion # Не надо ставить скобки в прочих бинарных выражениях если они не влияют на порядок вычисления
+dotnet_style_parentheses_in_other_operators = never_if_unnecessary:suggestion # Не надо ставить лишние скобки
+dotnet_style_parentheses_in_relational_binary_operators = never_if_unnecessary:suggestion # Не надо ставить скобки в логичиских бинарных выражениях если они не влияют на порядок вычисления
+dotnet_style_predefined_type_for_locals_parameters_members = true:error # Использовать псевдонимы типов для локальных членов
+dotnet_style_predefined_type_for_member_access = true:error # Использовать псевдонимы типов для доступа к членам типа
+dotnet_style_prefer_conditional_expression_over_return = false:warning # Не предпочитать тернарные операторы операторам возврата
+dotnet_style_qualification_for_event = false:error # Предпочитать не использовать this для обращений к событиям
+dotnet_style_qualification_for_field = false:error # Не использовать this для обращений к полям
+dotnet_style_qualification_for_method = false:suggestion  # Предпочитать не использовать this для обращений к методам
+dotnet_style_qualification_for_property = false:suggestion  # Предпочитать не использовать this для обращений к свойствам
+dotnet_style_require_accessibility_modifiers = always:error # Предпочитать явно использовать модификаторы доступа к интерфейсам, классам, енумам.
+
+dotnet_style_coalesce_expression = true:warning # Предпочитать ?? перед ? :
+dotnet_style_null_propagation = true:error # Предпочитать propogation для свойств объекта перед ? : 
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion # Предпочитать 'is null' проверку для референсных типов
+dotnet_style_prefer_auto_properties = true:suggestion # Препочитать автосвойства
+dotnet_style_object_initializer = true:warning # Объектный инициализатор должен инициализировать свойств 'в столбик'
+dotnet_style_collection_initializer = true:warning # Предпочитать инициализаторы коллекций
+dotnet_style_prefer_simplified_boolean_expressions = true:warning # Предпочитать упрощённые булевы выражения
+dotnet_style_prefer_conditional_expression_over_assignment = true:suggestion # Предпочитать тернарные операторы наборам if else
+dotnet_style_explicit_tuple_names = true:warning # Предпочитать явные имена полей кортежа неявным
+dotnet_style_prefer_inferred_tuple_names = true:warning # Предпочитать неявно выводимые имена полей кортежа
+dotnet_style_prefer_inferred_anonymous_type_member_names = true:warning # Предпочитать неявно выводимые имена полей анонимного типа
+dotnet_style_prefer_compound_assignment = true:warning # Предпочитать сокращённый синтаксис присвоений с вычислениями
+dotnet_style_prefer_simplified_interpolation = true:warning # Предпочитать упрощённую интерполяцию (без необязательного приведения типов)
+dotnet_style_namespace_match_folder = true:error # Пространства имён должны совпадать с деревьями каталогов
+dotnet_style_operator_placement_when_wrapping = beginning_of_line# При враппе строк предпочитать чтобы операторы находились в начале строки
+
+# Диагностика
+dotnet_analyzer_diagnostic.category-Style.severity = error # По умолчанию всё несоответствие стилю программирования - предупреждение
+dotnet_diagnostic.CS1591.severity = none # К чёрту обязательность XML комментариев для публичных членов классов https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-messages/cs1591
+dotnet_diagnostic.IDE0001.severity = none # К чёрту обязательность симплификации имён https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0001
+dotnet_diagnostic.IDE0003.severity = none # К чёрту this'ы https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0003-ide0009
+dotnet_diagnostic.IDE0004.severity = warning # Предлагать убирать необязательное приведение типов https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0004
+dotnet_diagnostic.IDE0007.severity = none # Не надо требовать использовать только var https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0007-ide0008
+dotnet_diagnostic.IDE0008.severity = none # Не надо требовать использовать только явные типы https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0007-ide0008
+dotnet_diagnostic.IDE0009.severity = error # К чёрту this'ы https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0003-ide0009
+dotnet_diagnostic.IDE0010.severity = warning # Предлагать добавлять пропущенные кейсы в свичи https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0010
+dotnet_diagnostic.IDE0022.severity = none # Не требовать выражений для методов https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0022
+dotnet_diagnostic.IDE0028.severity = warning # Предлагать использовать инициализаторы коллекций https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0028
+dotnet_diagnostic.IDE0038.severity = warning # Предлагать использовать pattern matching https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0020-ide0038
+dotnet_diagnostic.IDE0040.severity = error # Обязательно добавлять модификаторы доступа https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0040
+dotnet_diagnostic.IDE0045.severity = warning # Предпочитать тернарный оператор паре if else https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0045
+dotnet_diagnostic.IDE0047.severity = suggestion # Предпочитать удалять не нужные скобки https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0047-ide0048
+dotnet_diagnostic.IDE0048.severity = none # Не добавлять не обязательные скобки https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0047-ide0048
+dotnet_diagnostic.IDE0053.severity = none # Не приставать с лямбдами https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0053
+dotnet_diagnostic.IDE0055.severity = none # Не лезть с форматированием когда не просят https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0055
+dotnet_diagnostic.IDE0066.severity = suggestion
+dotnet_diagnostic.IDE0072.severity = warning # Предлагать добавлять пропущенные кейсы в свичи https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0072
+dotnet_diagnostic.IDE0075.severity = suggestion
+dotnet_diagnostic.IDE0078.severity = suggestion
+dotnet_diagnostic.IDE0090.severity = warning # Предпочитать неявное объявление типа при инициализации, если тип очевиден https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0090
+dotnet_diagnostic.IDE0120.severity = none
+#dotnet_diagnostic.IDE0130.severity = none # Есть известный баг с этим рулом, надо посмотреть устранили его 2022 студии или нет
+dotnet_diagnostic.IDE0160.severity = none
+
+# ReSharper properties
+resharper_apply_auto_detected_rules = false # Без самодеятельности решарпера
+resharper_apply_on_completion = true # Автоформатировать код на закрывающих скобках, точках с запятой
+resharper_braces_for_for = required # for должен всегда иметь тело
+resharper_braces_for_foreach = required # foreach должен всегда иметь тело
+resharper_braces_for_while = required # while должен всегда иметь тело
+resharper_for_built_in_types = use_var_when_evident # Предпочитать var даже для встроенных типов
+
+# ReSharper уровни предупреждений о проблемах
+resharper_arrange_redundant_parentheses_highlighting = suggestion
+resharper_arrange_this_qualifier_highlighting = error
+resharper_arrange_type_member_modifiers_highlighting = error
+resharper_arrange_type_modifiers_highlighting = error
+resharper_built_in_type_reference_style_for_member_access_highlighting = suggestion
+resharper_built_in_type_reference_style_highlighting = suggestion
+resharper_redundant_base_qualifier_highlighting = error
+resharper_redundant_blank_lines_highlighting = error
+resharper_suggest_var_or_type_built_in_types_highlighting = hint
+resharper_suggest_var_or_type_elsewhere_highlighting = suggestion
+resharper_suggest_var_or_type_simple_types_highlighting = suggestion
+resharper_arrange_attributes_highlighting = warning
+resharper_arrange_constructor_or_destructor_body_highlighting = suggestion
+resharper_arrange_default_value_when_type_not_evident_highlighting = warning
+resharper_arrange_local_function_body_highlighting = suggestion
+resharper_arrange_method_or_operator_body_highlighting = suggestion
+resharper_arrange_missing_parentheses_highlighting = suggestion
+resharper_arrange_object_creation_when_type_evident_highlighting = hint
+resharper_arrange_object_creation_when_type_not_evident_highlighting = suggestion
+resharper_enforce_do_while_statement_braces_highlighting = error
+resharper_enforce_fixed_statement_braces_highlighting = error
+resharper_enforce_foreach_statement_braces_highlighting = error
+resharper_enforce_for_statement_braces_highlighting = error
+resharper_enforce_if_statement_braces_highlighting = error
+resharper_enforce_lock_statement_braces_highlighting = error
+resharper_enforce_using_statement_braces_highlighting = error
+resharper_enforce_while_statement_braces_highlighting = error
+resharper_remove_blank_lines_near_braces_in_code = true
+resharper_remove_blank_lines_near_braces_in_declarations = true
+resharper_remove_redundant_braces_highlighting = suggestion
+resharper_arrange_namespace_body_highlighting = hint
+resharper_redundant_type_arguments_of_method_highlighting = warning
+resharper_redundant_explicit_array_creation_highlighting = warning
+
+[*Mapping.{cs,vb}]
+csharp_style_unused_value_expression_statement_preference = discard_variable:none # Для ряда файлов это требование перебор и не нужно
+dotnet_diagnostic.IDE0058.severity = none
+
+[*Startup.{cs,vb}]
+csharp_style_unused_value_expression_statement_preference = discard_variable:none # Для ряда файлов это требование перебор и не нужно
+dotnet_diagnostic.IDE0058.severity = none
+
+[*Program.{cs,vb}]
+csharp_style_unused_value_expression_statement_preference = discard_variable:none # Для ряда файлов это требование перебор и не нужно
+dotnet_diagnostic.IDE0058.severity = none
+
+[*Extensions.{cs,vb}]
+csharp_style_unused_value_expression_statement_preference = discard_variable:none # Для ряда файлов это требование перебор и не нужно
+dotnet_diagnostic.IDE0058.severity = none
+
+[*generated.cs]
+generated_code = true
+
+[*swagger.cs]
+generated_code = true
+dotnet_diagnostic.IDE0005.severity = none
+
+# Для библиотек, содержащих тесты правила надо немного ослабить
+[**Tests/**Tests.{cs,vb}]
+
+csharp_prefer_braces = when_multiline
+
+csharp_style_var_elsewhere = true:hint
+csharp_style_var_for_built_in_types = true:hint
+csharp_style_var_when_type_is_apparent = true:hint
+
+# Диагностика
+dotnet_analyzer_diagnostic.category-Style.severity = warning
+dotnet_diagnostic.IDE0004.severity = none
+dotnet_diagnostic.IDE0009.severity = none
+dotnet_diagnostic.IDE0040.severity = none
+dotnet_diagnostic.IDE0058.severity = none
+dotnet_diagnostic.IDE0061.severity = none
+dotnet_diagnostic.IDE0072.severity = none
+dotnet_diagnostic.IDE0090.severity = none
+
+# ReSharper inspection severities
+resharper_private_field_can_be_converted_to_local_variable_highlighting = hint
+resharper_arrange_local_function_body_highlighting = hint
+resharper_arrange_object_creation_when_type_evident_highlighting = none
+resharper_arrange_object_creation_when_type_not_evident_highlighting = none
+resharper_redundant_type_arguments_of_method_highlighting = suggestion
+resharper_redundant_explicit_array_creation_highlighting = suggestion
+
+csharp_style_unused_value_expression_statement_preference = discard_variable:none
+
+[**Migrations/*.cs]
+generated_code = true
+dotnet_diagnostic.IDE0005.severity = none
+dotnet_diagnostic.IDE0058.severity = none

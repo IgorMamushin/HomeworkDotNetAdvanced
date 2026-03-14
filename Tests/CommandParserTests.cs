@@ -30,19 +30,26 @@ public class CommandParserTests
     }
 
     [Theory]
-    [InlineData( "GET   user:1  Data")]
-    [InlineData( " GET user:1 Data")]
-    [InlineData( "GET user:1 Data ")]
-    [InlineData( " GET user:1 Data ")]
-    [InlineData( " GET  user:1 Data ")]
-    [InlineData( " GET  user:1    Data ")]
-    public void ParseCommandWithExtraWhitespaces(string input)
+    [InlineData( "GET   user:1  Data", "GET", "user:1", "Data")]
+    [InlineData( " GET user:1 Data", "GET", "user:1", "Data")]
+    [InlineData( "GET user:1 Data ", "GET", "user:1", "Data")]
+    [InlineData( " GET user:1 Data ", "GET", "user:1", "Data")]
+    [InlineData( " GET  user:1 Data ", "GET", "user:1", "Data")]
+    [InlineData( " GET  user:1    Data ", "GET", "user:1", "Data")]
+    [InlineData( " GET  user:1    Data\r\n", "GET", "user:1", "Data")]
+    [InlineData( " GET  user:1    Data\n", "GET", "user:1", "Data")]
+    [InlineData( " GET  user:1    Data\r", "GET", "user:1", "Data")]
+    [InlineData( " GET  user:1", "GET", "user:1", "")]
+    [InlineData( " GET  user:1\r\n", "GET", "user:1", "")]
+    [InlineData( " GET  user:1\r", "GET", "user:1", "")]
+    [InlineData( " GET  user:1\n", "GET", "user:1", "")]
+    public void ParseCommandWithExtraWhitespaces(string input, string expectedCommand, string expectedKey, string expectedValue)
     {
         var result = CommandParser.Parse(Encoding.UTF8.GetBytes(input));
 
-        Assert.Equal("GET", Encoding.UTF8.GetString(result.Command));
-        Assert.Equal("user:1", Encoding.UTF8.GetString(result.Key));
-        Assert.Equal("Data", Encoding.UTF8.GetString(result.Value));
+        Assert.Equal(expectedCommand, Encoding.UTF8.GetString(result.Command));
+        Assert.Equal(expectedKey, Encoding.UTF8.GetString(result.Key));
+        Assert.Equal(expectedValue, Encoding.UTF8.GetString(result.Value));
     }
 
     [Fact]

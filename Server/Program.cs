@@ -1,4 +1,6 @@
-﻿namespace Server;
+﻿using HomeworkAdv;
+
+namespace Server;
 
 public class Program
 {
@@ -12,7 +14,9 @@ public class Program
             Console.WriteLine("Cancelling...");
         };
 
-        var server = new TcpServer();
+        using var store = new SimpleStore();
+
+        var server = new TcpServer(store);
         await server.StartAsync(globalCts.Token);
     }
 }

@@ -52,7 +52,7 @@ public static class CommandParser
     private static int IndexOfFirstNonWhitespace(ref readonly ReadOnlySpan<byte> span)
     {
         var i = 0;
-        while (i < span.Length && span[i] == Separator)
+        while (i < span.Length && IsWhiteSpace(span, i))
         {
             i++;
         }
@@ -60,10 +60,12 @@ public static class CommandParser
         return i;
     }
 
+    private static bool IsWhiteSpace(ReadOnlySpan<byte> span, int i) => span[i] == 0 || span[i] == Separator || span[i] == (byte)'\n' || span[i] == (byte)'\r';
+
     private static int LengthWithoutWhitespace(ref readonly ReadOnlySpan<byte> span)
     {
         var i = span.Length - 1;
-        while (i >= 0 && span[i] == Separator)
+        while (i >= 0 && IsWhiteSpace(span, i))
         {
             i--;
         }

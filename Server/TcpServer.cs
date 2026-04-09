@@ -54,6 +54,11 @@ public class TcpServer
                 var result = await reader.ReadAsync(cancellationToken);
                 var buffer = result.Buffer;
 
+                if (buffer.IsEmpty)
+                {
+                    return;
+                }
+
                 while (TryReadLine(ref buffer, out var position))
                 {
                     var line = buffer.Slice(0, position.Value);
@@ -82,7 +87,7 @@ public class TcpServer
             clientSocket.Shutdown(SocketShutdown.Both);
             clientSocket.Close();
             clientSocket.Dispose();
-            Console.WriteLine("Client disconnected");
+            // Console.WriteLine("Client disconnected");
         }
     }
 
@@ -98,7 +103,7 @@ public class TcpServer
             var command = Encoding.UTF8.GetString(result.Command);
             var key = Encoding.UTF8.GetString(result.Key);
 
-            Console.WriteLine($"Command: {command}, Key: {key}, Value: {Encoding.UTF8.GetString(result.Value)}");
+            // Console.WriteLine($"Command: {command}, Key: {key}, Value: {Encoding.UTF8.GetString(result.Value)}");
 
             switch (command.ToLower())
             {

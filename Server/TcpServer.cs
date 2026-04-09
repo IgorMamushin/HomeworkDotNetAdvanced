@@ -4,7 +4,9 @@ using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using HomeworkAdv;
+using Models;
 
 namespace Server;
 
@@ -70,7 +72,7 @@ public class TcpServer
 
                     try
                     {
-                        await HandleMessage(rented, stream, cancellationToken);
+                        await HandleMessage(rented.AsMemory(0, length), stream, cancellationToken);
                         await stream.FlushAsync(cancellationToken);
                     }
                     finally
@@ -97,6 +99,7 @@ public class TcpServer
         CancellationToken cancellationToken)
     {
         await _queueLock.WaitAsync(cancellationToken);
+
         try
         {
             var result = CommandParser.Parse(buffer.Span);
@@ -108,11 +111,22 @@ public class TcpServer
             switch (command.ToLower())
             {
             case "get":
-                var data = _store.Get(key) ?? _nilMessage;
+                var getUserProfile = _store.Get(key);
+                if (getUserProfile == null)
+                {
+                    await stream.WriteAsync(_nilMessage, cancellationToken);
+                    break;
+                }
+
+                var data = JsonSerializer.SerializeToUtf8Bytes(getUserProfile, ModelJsonContext.Default.Options);
                 await stream.WriteAsync(data, cancellationToken);
                 break;
             case "set":
-                _store.Set(key, result.Value.ToArray());
+                var userProfile =
+                    JsonSerializer.Deserialize<UserProfile>(result.Value, ModelJsonContext.Default.Options) ??
+                    throw new ArgumentException("Cannot deserialize user profile");
+
+                _store.Set(key, userProfile);
                 await stream.WriteAsync(_okMessage, cancellationToken);
                 break;
             case "delete":
@@ -123,6 +137,17 @@ public class TcpServer
                 await stream.WriteAsync(_unknownCommandMessage, cancellationToken);
                 break;
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // ignore
+        }
+        catch (Exception e)
+        {
+            var strBuffer = Encoding.UTF8.GetString(buffer.Span);
+
+            Console.WriteLine($"Buffer: {strBuffer}");
+            Console.WriteLine(e);
         }
         finally
         {

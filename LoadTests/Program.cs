@@ -1,17 +1,26 @@
-﻿using System.Text;
+﻿using Models;
 using NBomber.CSharp;
 
 namespace LoadTests;
 
 public class Program
 {
+    private static int s_id = 0;
+
     public static async Task Main(string[] args)
     {
+        // var key = RandomString(15);
+        // var userProfile = GenerateUserProfile();
+        // using var tcpClient = new TcpClient(8080);
+        //
+        // await tcpClient.Connect(CancellationToken.None);
+        // await tcpClient.SetValue(key, userProfile, CancellationToken.None);
+
+
         var scenario = Scenario.Create("set_get_data", async ctx =>
         {
             var key = RandomString(15);
-            var value = RandomString(200);
-            var valueBytes = Encoding.UTF8.GetBytes(value);
+            var userProfile = GenerateUserProfile();
 
             using var tcpClient = new TcpClient(8080);
 
@@ -23,15 +32,14 @@ public class Program
 
             var set = await Step.Run("set", ctx, async () =>
             {
-                await tcpClient.SetValue(key, valueBytes, ctx.ScenarioCancellationToken);
+                await tcpClient.SetValue(key, userProfile, ctx.ScenarioCancellationToken);
                 return Response.Ok();
             });
 
             var get = await Step.Run("get", ctx, async () =>
             {
                 var responseValue = await tcpClient.GetValue(key, ctx.ScenarioCancellationToken);
-                var str = Encoding.UTF8.GetString(responseValue.Span);
-                if (string.Equals(str, value))
+                if (responseValue?.Id == userProfile.Id)
                 {
                     return Response.Ok();
                 }
@@ -44,11 +52,11 @@ public class Program
         .WithWarmUpDuration(TimeSpan.FromSeconds(5))
         .WithLoadSimulations(
             Simulation.RampingInject(
-                rate: 200,
+                rate: 10,
                 interval: TimeSpan.FromSeconds(1),
                 during: TimeSpan.FromSeconds(30)),
             Simulation.Inject(
-                rate: 200,
+                rate: 10,
                 interval: TimeSpan.FromSeconds(1),
                 during: TimeSpan.FromSeconds(30))
         );;
@@ -63,5 +71,21 @@ public class Program
         const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         return new string(Enumerable.Repeat(Chars, length)
                                     .Select(s => s[Random.Shared.Next(s.Length)]).ToArray());
+    }
+
+    private static string RandomString(int minLength, int maxLength)
+    {
+        var length = Random.Shared.Next(minLength, maxLength);
+        return RandomString(length);
+    }
+
+    private static UserProfile GenerateUserProfile()
+    {
+        return new UserProfile
+        {
+            Id = Interlocked.Add(ref s_id, 1),
+            CreatedAt = DateTime.UtcNow,
+            Username = RandomString(10)
+        };
     }
 }

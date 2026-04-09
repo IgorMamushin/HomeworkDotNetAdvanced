@@ -2,6 +2,8 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
+using Models;
 
 namespace LoadTests;
 
@@ -27,9 +29,11 @@ public class TcpClient : IDisposable
         return _clientSocket.ConnectAsync(IPAddress.Loopback, _port, cancellationToken);
     }
 
-    public async Task SetValue(string key, byte[] value, CancellationToken cancellationToken)
+    public async Task SetValue(string key, UserProfile userProfile, CancellationToken cancellationToken)
     {
         var keyBytes = Encoding.UTF8.GetBytes(key);
+
+        var value = JsonSerializer.SerializeToUtf8Bytes(userProfile, ModelJsonContext.Default.Options);
 
         var totalLength = s_setCommand.Length
                           + s_spaceCommand.Length
@@ -81,7 +85,7 @@ public class TcpClient : IDisposable
         }
     }
 
-    public async Task<Memory<byte>> GetValue(string key, CancellationToken cancellationToken)
+    public async Task<UserProfile?> GetValue(string key, CancellationToken cancellationToken)
     {
         var keyBytes = Encoding.UTF8.GetBytes(key);
 
@@ -110,10 +114,10 @@ public class TcpClient : IDisposable
             if (receivedBytes == 0)
             {
                 // Console.WriteLine("Server closed the connection");
-                return new Memory<byte>([]);
+                return null;
             }
 
-            return responsePool.AsMemory(0, receivedBytes);
+            return JsonSerializer.Deserialize<UserProfile>(responsePool.AsSpan(0, receivedBytes), ModelJsonContext.Default.Options);
         }
         finally
         {

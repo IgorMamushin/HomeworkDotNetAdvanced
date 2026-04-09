@@ -1,4 +1,7 @@
-﻿namespace HomeworkAdv;
+﻿using System.Text.Json;
+using Models;
+
+namespace HomeworkAdv;
 
 public class SimpleStore : IDisposable
 {
@@ -8,14 +11,16 @@ public class SimpleStore : IDisposable
     private long _getCount;
     private long _deleteCount;
 
-    public void Set(string key, byte[] value)
+    public void Set(string key, UserProfile value)
     {
+        var data = JsonSerializer.SerializeToUtf8Bytes(value, ModelJsonContext.Default.Options);
+
         _lock.EnterWriteLock();
         try
         {
-            if (!_data.TryAdd(key, value))
+            if (!_data.TryAdd(key, data))
             {
-                _data[key] = value;
+                _data[key] = data;
             }
 
             // it's OK. because we use WriteLock
@@ -27,7 +32,7 @@ public class SimpleStore : IDisposable
         }
     }
 
-    public byte[]? Get(string key)
+    public UserProfile? Get(string key)
     {
         _lock.EnterReadLock();
 
@@ -35,7 +40,13 @@ public class SimpleStore : IDisposable
         {
             var data = _data.GetValueOrDefault(key);
             Interlocked.Increment(ref _getCount);
-            return data;
+
+            if (data == null)
+            {
+                return null;
+            }
+
+            return JsonSerializer.Deserialize<UserProfile>(data, ModelJsonContext.Default.Options);
         }
         finally
         {

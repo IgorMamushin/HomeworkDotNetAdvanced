@@ -1,90 +1,113 @@
-﻿using System.Text;
+using System.Buffers.Binary;
+using System.Text;
 using HomeworkAdv;
 
 namespace CommandParserTests;
 
 public class CommandParserTests
 {
-    [Fact]
-    public void SuccessParseCommandWithFullArgs()
+    private static byte[] BuildFrame(string command, string key, byte[] value)
     {
-        var rawString = "SET user:1 SomeData"u8.ToArray();
-
-        var result = CommandParser.Parse(rawString);
-
-        Assert.Equal("SET", Encoding.UTF8.GetString(result.Command));
-        Assert.Equal("user:1", Encoding.UTF8.GetString(result.Key));
-        Assert.Equal("SomeData", Encoding.UTF8.GetString(result.Value));
+        var cmdBytes = Encoding.UTF8.GetBytes(command);
+        var keyBytes = Encoding.UTF8.GetBytes(key);
+        var total = 4 + cmdBytes.Length + 4 + keyBytes.Length + 4 + value.Length;
+        var buf = new byte[total];
+        var i = 0;
+        BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(i), cmdBytes.Length); i += 4;
+        cmdBytes.CopyTo(buf.AsSpan(i)); i += cmdBytes.Length;
+        BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(i), keyBytes.Length); i += 4;
+        keyBytes.CopyTo(buf.AsSpan(i)); i += keyBytes.Length;
+        BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(i), value.Length); i += 4;
+        value.CopyTo(buf.AsSpan(i));
+        return buf;
     }
 
-    [Fact]
-    public void SuccessParseCommandWithTwoArgs()
-    {
-        var rawString = "GET user:1"u8.ToArray();
-
-        var result = CommandParser.Parse(rawString);
-
-        Assert.Equal("GET", Encoding.UTF8.GetString(result.Command));
-        Assert.Equal("user:1", Encoding.UTF8.GetString(result.Key));
-        Assert.Equal(string.Empty, Encoding.UTF8.GetString(result.Value));
-    }
+    private static byte[] BuildFrame(string command, string key, string value)
+        => BuildFrame(command, key, Encoding.UTF8.GetBytes(value));
 
     [Theory]
-    [InlineData( "GET   user:1  Data", "GET", "user:1", "Data")]
-    [InlineData( " GET user:1 Data", "GET", "user:1", "Data")]
-    [InlineData( "GET user:1 Data ", "GET", "user:1", "Data")]
-    [InlineData( " GET user:1 Data ", "GET", "user:1", "Data")]
-    [InlineData( " GET  user:1 Data ", "GET", "user:1", "Data")]
-    [InlineData( " GET  user:1    Data ", "GET", "user:1", "Data")]
-    [InlineData( " GET  user:1    Data\r\n", "GET", "user:1", "Data")]
-    [InlineData( " GET  user:1    Data\n", "GET", "user:1", "Data")]
-    [InlineData( " GET  user:1    Data\r", "GET", "user:1", "Data")]
-    [InlineData( " GET  user:1", "GET", "user:1", "")]
-    [InlineData( " GET  user:1\r\n", "GET", "user:1", "")]
-    [InlineData( " GET  user:1\r", "GET", "user:1", "")]
-    [InlineData( " GET  user:1\n", "GET", "user:1", "")]
-    public void ParseCommandWithExtraWhitespaces(string input, string expectedCommand, string expectedKey, string expectedValue)
+    [InlineData("SET", "user:1", "SomeData")]
+    [InlineData("GET", "user:1", "")]
+    [InlineData("SET", "user:99", "")]   // SET без value = удаление
+    [InlineData("SET", "key", "value with spaces inside")]
+    [InlineData("GET", "some-long-key:123", "")]
+    [InlineData("SET", "k", "v")]
+    public void ParseCommandRoundTrip(string command, string key, string value)
     {
-        var result = CommandParser.Parse(Encoding.UTF8.GetBytes(input));
+        var frame = BuildFrame(command, key, value);
 
-        Assert.Equal(expectedCommand, Encoding.UTF8.GetString(result.Command));
-        Assert.Equal(expectedKey, Encoding.UTF8.GetString(result.Key));
-        Assert.Equal(expectedValue, Encoding.UTF8.GetString(result.Value));
+        var result = CommandParser.Parse(frame);
+
+        Assert.Equal(command, Encoding.UTF8.GetString(result.Command));
+        Assert.Equal(key, Encoding.UTF8.GetString(result.Key));
+        Assert.Equal(value, Encoding.UTF8.GetString(result.Value));
     }
 
     [Fact]
-    public void ParseCommandWithoutKey()
+    public void ParseCommandWithBinaryValuePreservesAllBytes()
     {
-        var rawString = "SET"u8.ToArray();
+        // bytes that would corrupt the old text-based protocol
+        var binaryValue = new byte[] { 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x20, 0xFF, 0x01 };
+        var frame = BuildFrame("SET", "key", binaryValue);
 
-        var result = CommandParser.Parse(rawString);
+        var result = CommandParser.Parse(frame);
 
-        Assert.Equal(string.Empty, Encoding.UTF8.GetString(result.Command));
-        Assert.Equal(string.Empty, Encoding.UTF8.GetString(result.Key));
-        Assert.Equal(string.Empty, Encoding.UTF8.GetString(result.Value));
+        Assert.Equal("SET", Encoding.UTF8.GetString(result.Command));
+        Assert.Equal("key", Encoding.UTF8.GetString(result.Key));
+        Assert.Equal(binaryValue, result.Value.ToArray());
     }
 
     [Fact]
-    public void ShortCommandShouldParseSuccessfully()
+    public void EmptySpanReturnsAllEmpty()
     {
-        var rawString = " S  U  D  "u8.ToArray();
+        var result = CommandParser.Parse([]);
 
-        var result = CommandParser.Parse(rawString);
-
-        Assert.Equal("S", Encoding.UTF8.GetString(result.Command));
-        Assert.Equal("U", Encoding.UTF8.GetString(result.Key));
-        Assert.Equal("D", Encoding.UTF8.GetString(result.Value));
+        Assert.Empty(result.Command.ToArray());
+        Assert.Empty(result.Key.ToArray());
+        Assert.Empty(result.Value.ToArray());
     }
 
     [Fact]
-    public void EmptySpanShouldBeParsedCorrectly()
+    public void BufferTooShortForCmdLenReturnsAllEmpty()
     {
-        var rawString = "     "u8.ToArray();
+        var result = CommandParser.Parse(new byte[] { 0x03, 0x00 });
 
-        var result = CommandParser.Parse(rawString);
+        Assert.Empty(result.Command.ToArray());
+        Assert.Empty(result.Key.ToArray());
+        Assert.Empty(result.Value.ToArray());
+    }
 
-        Assert.Equal(string.Empty, Encoding.UTF8.GetString(result.Command));
-        Assert.Equal(string.Empty, Encoding.UTF8.GetString(result.Key));
-        Assert.Equal(string.Empty, Encoding.UTF8.GetString(result.Value));
+    [Fact]
+    public void BufferTruncatedAfterCommandReturnsCommandOnly()
+    {
+        var cmdBytes = Encoding.UTF8.GetBytes("GET");
+        var buf = new byte[4 + cmdBytes.Length]; // нет key length после команды
+        BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(0), cmdBytes.Length);
+        cmdBytes.CopyTo(buf.AsSpan(4));
+
+        var result = CommandParser.Parse(buf);
+
+        Assert.Equal("GET", Encoding.UTF8.GetString(result.Command));
+        Assert.Empty(result.Key.ToArray());
+        Assert.Empty(result.Value.ToArray());
+    }
+
+    [Fact]
+    public void BufferTruncatedAfterKeyReturnsCommandAndKey()
+    {
+        var cmdBytes = Encoding.UTF8.GetBytes("SET");
+        var keyBytes = Encoding.UTF8.GetBytes("user:99");
+        var buf = new byte[4 + cmdBytes.Length + 4 + keyBytes.Length]; // нет val length после ключа
+        var i = 0;
+        BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(i), cmdBytes.Length); i += 4;
+        cmdBytes.CopyTo(buf.AsSpan(i)); i += cmdBytes.Length;
+        BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(i), keyBytes.Length); i += 4;
+        keyBytes.CopyTo(buf.AsSpan(i));
+
+        var result = CommandParser.Parse(buf);
+
+        Assert.Equal("SET", Encoding.UTF8.GetString(result.Command));
+        Assert.Equal("user:99", Encoding.UTF8.GetString(result.Key));
+        Assert.Empty(result.Value.ToArray());
     }
 }

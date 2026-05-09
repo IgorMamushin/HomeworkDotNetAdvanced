@@ -1,75 +1,55 @@
-﻿namespace HomeworkAdv;
+using System.Buffers.Binary;
+
+namespace HomeworkAdv;
 
 public static class CommandParser
 {
-    private const byte Separator = (byte)' ';
-
-    public static ParseResult<byte> Parse(ReadOnlySpan<byte> parentSpan)
+    public static ParseResult<byte> Parse(ReadOnlySpan<byte> span)
     {
-        var firstNonEmptyIndex = IndexOfFirstNonWhitespace(ref parentSpan);
-
-        parentSpan = parentSpan.Slice(firstNonEmptyIndex);
-
-        var index = parentSpan.IndexOf(Separator);
-        if (index == -1)
+        if (span.Length < 4)
         {
-            return new ParseResult<byte>(ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty);
+            return new ParseResult<byte>([], [], []);
         }
 
-        var command = parentSpan.Slice(0, index);
-        parentSpan = parentSpan.Slice(index + 1);
-        firstNonEmptyIndex = IndexOfFirstNonWhitespace(ref parentSpan);
-        parentSpan = parentSpan.Slice(firstNonEmptyIndex);
-
-        index = parentSpan.IndexOf(Separator);
-        if (index == -1)
+        var cmdLen = BinaryPrimitives.ReadInt32LittleEndian(span);
+        span = span[4..];
+        if (span.Length < cmdLen)
         {
-            if (parentSpan.Length > 0)
-            {
-                var length = LengthWithoutWhitespace(ref parentSpan);
-
-                return new ParseResult<byte>(command, parentSpan.Slice(0, length), ReadOnlySpan<byte>.Empty);
-            }
-
-            return new ParseResult<byte>(ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty);
+            return new ParseResult<byte>([], [], []);
         }
 
-        var key = parentSpan.Slice(0, index);
-        parentSpan = parentSpan.Slice(index+1);
-        firstNonEmptyIndex = IndexOfFirstNonWhitespace(ref parentSpan);
-        parentSpan = parentSpan.Slice(firstNonEmptyIndex);
+        var command = span[..cmdLen];
+        span = span[cmdLen..];
 
-        if (parentSpan.Length <= 0)
+        if (span.Length < 4)
         {
-            return new ParseResult<byte>(command, key, ReadOnlySpan<byte>.Empty);
+            return new ParseResult<byte>(command, [], []);
         }
 
-        var lengthValue = LengthWithoutWhitespace(ref parentSpan);
-
-        return new ParseResult<byte>(command, key, parentSpan.Slice(0, lengthValue));
-    }
-
-    private static int IndexOfFirstNonWhitespace(ref readonly ReadOnlySpan<byte> span)
-    {
-        var i = 0;
-        while (i < span.Length && IsWhiteSpace(span, i))
+        var keyLen = BinaryPrimitives.ReadInt32LittleEndian(span);
+        span = span[4..];
+        if (span.Length < keyLen)
         {
-            i++;
+            return new ParseResult<byte>(command, [], []);
         }
 
-        return i;
-    }
+        var key = span[..keyLen];
+        span = span[keyLen..];
 
-    private static bool IsWhiteSpace(ReadOnlySpan<byte> span, int i) => span[i] == 0 || span[i] == Separator || span[i] == (byte)'\n' || span[i] == (byte)'\r';
-
-    private static int LengthWithoutWhitespace(ref readonly ReadOnlySpan<byte> span)
-    {
-        var i = span.Length - 1;
-        while (i >= 0 && IsWhiteSpace(span, i))
+        if (span.Length < 4)
         {
-            i--;
+            return new ParseResult<byte>(command, key, []);
         }
 
-        return i+1;
+        var valLen = BinaryPrimitives.ReadInt32LittleEndian(span);
+        span = span[4..];
+        if (span.Length < valLen)
+        {
+            return new ParseResult<byte>(command, key, []);
+        }
+
+        var value = span[..valLen];
+
+        return new ParseResult<byte>(command, key, value);
     }
 }

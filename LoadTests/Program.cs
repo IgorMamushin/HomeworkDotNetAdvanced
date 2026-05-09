@@ -59,7 +59,8 @@ public class Program
                 rate: 10,
                 interval: TimeSpan.FromSeconds(1),
                 during: TimeSpan.FromSeconds(30))
-        );;
+        );
+        ;
 
         NBomberRunner
             .RegisterScenarios(scenario)
@@ -69,14 +70,7 @@ public class Program
     private static string RandomString(int length)
     {
         const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        return new string(Enumerable.Repeat(Chars, length)
-                                    .Select(s => s[Random.Shared.Next(s.Length)]).ToArray());
-    }
-
-    private static string RandomString(int minLength, int maxLength)
-    {
-        var length = Random.Shared.Next(minLength, maxLength);
-        return RandomString(length);
+        return new string([.. Enumerable.Repeat(Chars, length).Select(s => s[Random.Shared.Next(s.Length)])]);
     }
 
     private static UserProfile GenerateUserProfile()

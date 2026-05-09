@@ -1,19 +1,18 @@
-﻿using System.Text.Json;
-using Models;
+﻿using Models;
 
 namespace HomeworkAdv;
 
 public class SimpleStore : IDisposable
 {
     private readonly ReaderWriterLockSlim _lock = new();
-    private readonly Dictionary<string, byte[]> _data = new();
+    private readonly Dictionary<string, byte[]> _data = [];
     private long _setCount;
     private long _getCount;
     private long _deleteCount;
 
     public void Set(string key, UserProfile value)
     {
-        var data = JsonSerializer.SerializeToUtf8Bytes(value, ModelJsonContext.Default.Options);
+        var data = value.Serialize();
 
         _lock.EnterWriteLock();
         try
@@ -39,14 +38,14 @@ public class SimpleStore : IDisposable
         try
         {
             var data = _data.GetValueOrDefault(key);
-            Interlocked.Increment(ref _getCount);
+            _ = Interlocked.Increment(ref _getCount);
 
             if (data == null)
             {
                 return null;
             }
 
-            return JsonSerializer.Deserialize<UserProfile>(data, ModelJsonContext.Default.Options);
+            return UserProfile.Deserialize(data);
         }
         finally
         {
@@ -63,7 +62,7 @@ public class SimpleStore : IDisposable
 
             if (removed)
             {
-                Interlocked.Increment(ref _deleteCount);
+                _ = Interlocked.Increment(ref _deleteCount);
             }
         }
         finally

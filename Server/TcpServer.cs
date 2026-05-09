@@ -1,10 +1,9 @@
 ﻿using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
+using System.Buffers.Binary;
 using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Text.Json;
 using HomeworkAdv;
 using Models;
 
@@ -12,19 +11,14 @@ namespace Server;
 
 public class TcpServer
 {
-    private readonly byte _eol;
-    private readonly byte[] _unknownCommandMessage;
-    private readonly byte[] _nilMessage;
-    private readonly byte[] _okMessage;
     private readonly SimpleStore _store;
-    private readonly SemaphoreSlim _queueLock = new(Environment.ProcessorCount * 2, Environment.ProcessorCount * 2);
+    private static readonly byte[] s_unknownCommandMessage = Encoding.UTF8.GetBytes("-ERR Unknown command\r\n");
+    private static readonly byte[] s_nilMessage = Encoding.UTF8.GetBytes("(nil)\r\n");
+    private static readonly byte[] s_okMessage = Encoding.UTF8.GetBytes("OK\r\n");
+    private static readonly SemaphoreSlim s_queueLock = new(Environment.ProcessorCount * 2, Environment.ProcessorCount * 2);
 
     public TcpServer(SimpleStore store)
     {
-        _eol = (byte)'\n';
-        _unknownCommandMessage = Encoding.UTF8.GetBytes("-ERR Unknown command\r\n");
-        _nilMessage = Encoding.UTF8.GetBytes("(nil)\r\n");
-        _okMessage = Encoding.UTF8.GetBytes("OK\r\n");
         _store = store;
     }
 
@@ -61,14 +55,11 @@ public class TcpServer
                     return;
                 }
 
-                while (TryReadLine(ref buffer, out var position))
+                while (TryReadMessage(ref buffer, out var message))
                 {
-                    var line = buffer.Slice(0, position.Value);
-                    buffer = buffer.Slice(buffer.GetPosition(1, position.Value));
-
-                    var length = checked((int)line.Length);
+                    var length = checked((int)message.Length);
                     var rented = ArrayPool<byte>.Shared.Rent(length);
-                    line.CopyTo(rented);
+                    message.CopyTo(rented);
 
                     try
                     {
@@ -95,10 +86,10 @@ public class TcpServer
 
     private async Task HandleMessage(
         ReadOnlyMemory<byte> buffer,
-        NetworkStream stream,
+        Stream stream,
         CancellationToken cancellationToken)
     {
-        await _queueLock.WaitAsync(cancellationToken);
+        await s_queueLock.WaitAsync(cancellationToken);
 
         try
         {
@@ -114,27 +105,37 @@ public class TcpServer
                 var getUserProfile = _store.Get(key);
                 if (getUserProfile == null)
                 {
-                    await stream.WriteAsync(_nilMessage, cancellationToken);
+                    await WriteWithLengthPrefixAsync(stream, s_nilMessage, cancellationToken);
                     break;
                 }
 
-                var data = JsonSerializer.SerializeToUtf8Bytes(getUserProfile, ModelJsonContext.Default.Options);
-                await stream.WriteAsync(data, cancellationToken);
+                var dataSize = getUserProfile.GetByteCount();
+                var responseBuffer = ArrayPool<byte>.Shared.Rent(4 + dataSize);
+                try
+                {
+                    BinaryPrimitives.WriteInt32LittleEndian(responseBuffer, dataSize);
+                    getUserProfile.SerializeTo(responseBuffer.AsSpan(4, dataSize));
+                    await stream.WriteAsync(responseBuffer.AsMemory(0, 4 + dataSize), cancellationToken);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(responseBuffer);
+                }
+
                 break;
             case "set":
-                var userProfile =
-                    JsonSerializer.Deserialize<UserProfile>(result.Value, ModelJsonContext.Default.Options) ??
-                    throw new ArgumentException("Cannot deserialize user profile");
+                var userProfile = UserProfile.Deserialize(result.Value) ??
+                                  throw new ArgumentException("Cannot deserialize user profile");
 
                 _store.Set(key, userProfile);
-                await stream.WriteAsync(_okMessage, cancellationToken);
+                await WriteWithLengthPrefixAsync(stream, s_okMessage, cancellationToken);
                 break;
             case "delete":
                 _store.Delete(key);
-                await stream.WriteAsync(_okMessage, cancellationToken);
+                await WriteWithLengthPrefixAsync(stream, s_okMessage, cancellationToken);
                 break;
             default:
-                await stream.WriteAsync(_unknownCommandMessage, cancellationToken);
+                await WriteWithLengthPrefixAsync(stream, s_unknownCommandMessage, cancellationToken);
                 break;
             }
         }
@@ -151,22 +152,52 @@ public class TcpServer
         }
         finally
         {
-            _queueLock.Release();
+            _ = s_queueLock.Release();
         }
     }
 
-    private bool TryReadLine(
+    private static bool TryReadMessage(
         ref ReadOnlySequence<byte> buffer,
-        [NotNullWhen(true)]out SequencePosition? position)
+        out ReadOnlySequence<byte> message)
     {
-        // Look for a EOL in the buffer.
-        position = buffer.PositionOf(_eol);
-
-        if (position == null)
+        if (buffer.Length < 4)
         {
+            message = default;
             return false;
         }
 
+        Span<byte> lengthBytes = stackalloc byte[4];
+        buffer.Slice(0, 4).CopyTo(lengthBytes);
+        var messageLength = BinaryPrimitives.ReadInt32LittleEndian(lengthBytes);
+
+        if (buffer.Length < 4 + messageLength)
+        {
+            message = default;
+            return false;
+        }
+
+        message = buffer.Slice(4, messageLength);
+        buffer = buffer.Slice(4 + messageLength);
         return true;
+    }
+
+    private static async ValueTask WriteWithLengthPrefixAsync(
+        Stream stream,
+        byte[] payload,
+        CancellationToken cancellationToken)
+    {
+        byte[] rented = ArrayPool<byte>.Shared.Rent(4);
+
+        try
+        {
+            BinaryPrimitives.WriteInt32LittleEndian(rented.AsSpan(0, 4), payload.Length);
+
+            await stream.WriteAsync(rented.AsMemory(0, 4), cancellationToken);
+            await stream.WriteAsync(payload, cancellationToken);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(rented);
+        }
     }
 }

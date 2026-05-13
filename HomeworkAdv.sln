@@ -18,6 +18,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{F0915BA3
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tool", "Tool", "{D4679095-1882-4114-87A5-DB4C522ABA12}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution items", "Solution items", "{723B9246-1A13-43BB-85E0-2009D65EF3C2}"
+	ProjectSection(SolutionItems) = preProject
+		docker-compose.yml = docker-compose.yml
+		grafana-datasources.yaml = grafana-datasources.yaml
+		loki-config.yaml = loki-config.yaml
+		otel-collector-config.yaml = otel-collector-config.yaml
+		prometheus.yml = prometheus.yml
+		tempo.yaml = tempo.yaml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

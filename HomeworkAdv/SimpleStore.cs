@@ -1,4 +1,5 @@
 ﻿using Models;
+using Models.Observability;
 
 namespace HomeworkAdv;
 
@@ -12,6 +13,9 @@ public class SimpleStore : IDisposable
 
     public void Set(string key, UserProfile value)
     {
+        using var activity = ServiceTrace.ActivitySource.StartActivity("SetData");
+        activity?.SetTag("key", key);
+
         var data = value.Serialize();
 
         _lock.EnterWriteLock();
@@ -33,6 +37,9 @@ public class SimpleStore : IDisposable
 
     public UserProfile? Get(string key)
     {
+        using var activity = ServiceTrace.ActivitySource.StartActivity("GetData");
+        activity?.SetTag("key", key);
+
         _lock.EnterReadLock();
 
         try
@@ -55,6 +62,9 @@ public class SimpleStore : IDisposable
 
     public void Delete(string key)
     {
+        using var activity = ServiceTrace.ActivitySource.StartActivity("DeleteData");
+        activity?.SetTag("key", key);
+
         _lock.EnterWriteLock();
         try
         {

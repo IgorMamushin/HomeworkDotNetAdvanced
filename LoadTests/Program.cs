@@ -7,16 +7,8 @@ public class Program
 {
     private static int s_id = 0;
 
-    public static async Task Main(string[] args)
+    public static Task Main(string[] args)
     {
-        // var key = RandomString(15);
-        // var userProfile = GenerateUserProfile();
-        // using var tcpClient = new TcpClient(8080);
-        //
-        // await tcpClient.Connect(CancellationToken.None);
-        // await tcpClient.SetValue(key, userProfile, CancellationToken.None);
-
-
         var scenario = Scenario.Create("set_get_data", async ctx =>
         {
             var key = RandomString(15);
@@ -60,11 +52,12 @@ public class Program
                 interval: TimeSpan.FromSeconds(1),
                 during: TimeSpan.FromSeconds(30))
         );
-        ;
 
         NBomberRunner
             .RegisterScenarios(scenario)
             .Run();
+
+        return Task.CompletedTask;
     }
 
     private static string RandomString(int length)
